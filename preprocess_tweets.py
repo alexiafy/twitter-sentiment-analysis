@@ -2,10 +2,10 @@ from pymongo import MongoClient
 from nltk.corpus import stopwords
 import re
 from nltk.stem.snowball import SnowballStemmer
-import csv
+
 
 connection = MongoClient("mongodb://localhost:27017/")
-db = connection.trial_news
+db = connection.trial_news                     # name of db (it should be changed to real_news or fake_news
 
 collections = db.collection_names()
 
@@ -71,6 +71,9 @@ def clean_text(text):
 
 
 def preprocess_tweet():
+    '''
+    Preprocess tweet
+    '''
 
     # clean text
     text_cleaned = clean_text(tweet['text'])
@@ -100,6 +103,10 @@ def preprocess_tweet():
 
 
 def preprocess_reply():
+    '''
+    Preprocess reply
+    '''
+
     # clean text
     text_cleaned = clean_text(reply['text'])
     # tokenization
@@ -138,6 +145,7 @@ for collection in collections:
         print('Preprocessing', collection, 'tweet', '[' + str(counter_tweets) + ']')
         counter_tweets += 1
 
+        # take the replies of tweets
         replies_count = db[collection].find_one({'id': tweet["id"]})["replies_count"]
         # if replies of the tweet exist, then preprocess them
         if replies_count > 0:
