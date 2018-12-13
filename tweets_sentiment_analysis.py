@@ -4,7 +4,7 @@ from pymongo import MongoClient
 
 
 connection = MongoClient("mongodb://localhost:27017/")
-db = connection.trial_news                     # name of db (it should be changed to real_news or fake_news
+db = connection.fake_news                     # name of db (it should be changed to real_news or fake_news
 
 collections = db.collection_names()
 
@@ -37,6 +37,11 @@ def RateSentiment(sentiString):
         positive = int(results[0])
         negative = int(results[1])
 
+    if sentiString == "":
+        positive = 1
+        negative = -1
+
+
     return positive, negative
 
 
@@ -47,7 +52,9 @@ def tweets_update_sentiment():
     '''
 
     # take the text of the tweet
-    text = tweet["text"]
+    text = tweet["text_tokenized_without_stopwords"]
+    # convert from list to str
+    text = ' '.join(text)
     # compute the sentiment strength
     pos, neg = RateSentiment(text)
 
@@ -72,9 +79,13 @@ def replies_update_sentiment():
     '''
 
     # take the reply of the tweet
-    text = reply["text"]
+    text = reply["text_tokenized_without_stopwords"]
+
+    # convert from list to str
+    text = ' '.join(text)
+
     # compute the sentiment strength
-    pos, neg = RateSentiment(text)
+    pos1, neg1 = RateSentiment(text)
 
     # update reply
     db[collection].update(
@@ -84,21 +95,21 @@ def replies_update_sentiment():
         },
         {
             "$set": {
-                "replies.$.positive": pos,
-                "replies.$.negative": neg
+                "replies.$.positive": pos1,
+                "replies.$.negative": neg1
             }
         }
     )
 
 
 for collection in collections:
-    tweets = db[collection].find()
+    tweets = db[collection].find().batch_size(10)
     counter_tweets = 1                 # counter for preprocessed tweets
     counter_replies = 1                # counter for preprocessed replies
 
     for tweet in tweets:
         tweets_update_sentiment()
-        print('Sentiment processing', collection, 'tweet', '[' + str(counter_tweets) + ']')
+        print('Processing', tweet["id"], 'tweet', '[' + str(counter_tweets) + ']')
         counter_tweets += 1
 
         # take the replies of tweets
@@ -109,5 +120,5 @@ for collection in collections:
 
             for reply in replies:
                 replies_update_sentiment()
-                print('Preprocessing', collection, 'reply', '[' + str(counter_replies) + ']')
+                print('Processing', reply["id"], 'reply', '[' + str(counter_replies) + ']')
                 counter_replies += 1

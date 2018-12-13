@@ -5,7 +5,7 @@ from nltk.stem.snowball import SnowballStemmer
 
 
 connection = MongoClient("mongodb://localhost:27017/")
-db = connection.trial_news                     # name of db (it should be changed to real_news or fake_news
+db = connection.fake_news                     # name of db (it should be changed to real_news or fake_news
 
 collections = db.collection_names()
 
@@ -38,7 +38,7 @@ def clean_text(text):
     text = re.sub(r"won't", "will not", text)
     text = re.sub(r"shouldn't", "should not", text)
     text = re.sub(r"can't", "cannot", text)
-    text = re.sub(r"[-()\"/;:<>{}`+=~|.!?,]", "", text)
+    #text = re.sub(r"[-()\"/;:<>{}`+=~|.!?,]", "", text)
     text = re.sub(r"plz", "please", text)
     text = re.sub(r"evryday", "everyday", text)
     text = re.sub(r"dnt", "do not", text)
@@ -83,8 +83,6 @@ def preprocess_tweet():
     tokens = [token for token in tokens if not token.startswith('http')
               if not token.startswith('#') if not token.startswith('@')]
 
-    # stemming
-    tokens = [stemmer.stem(token) for token in tokens]
     # remove stopwords
     clean_tokens = [w for w in tokens if not w in stop_words]
 
@@ -95,7 +93,7 @@ def preprocess_tweet():
         },
         {
             "$set": {
-                "text_text": tokens,
+                "text_tokenized": tokens,
                 "text_tokenized_without_stopwords": clean_tokens
             }
         }
@@ -115,8 +113,6 @@ def preprocess_reply():
     tokens = [token for token in tokens if not token.startswith('http')
               if not token.startswith('#') if not token.startswith('@')]
 
-    # stemming
-    tokens = [stemmer.stem(token) for token in tokens]
     # remove stopwords
     clean_tokens = [w for w in tokens if not w in stop_words]
 
@@ -136,7 +132,7 @@ def preprocess_reply():
 
 
 for collection in collections:
-    tweets = db[collection].find()
+    tweets = db[collection].find().batch_size(10)
     counter_tweets = 1                 # counter for preprocessed tweets
     counter_replies = 1                # counter for preprocessed replies
 
